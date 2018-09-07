@@ -33,7 +33,6 @@ class Widget(object):
 
     @parent.setter
     def parent(self, parent: 'Widget') -> None:
-        print("Setting parent of {} to {}".format(self, parent))
         self._dirty = True
         self._parent = parent
         self._parent.dirty = True
@@ -113,7 +112,6 @@ class Container(Widget):
 
     def add(self, child: 'Widget') -> None:
         self._children.append(child)
-        print("Adding child {} to {}".format(child, self))
         child.parent = self
 
     def clear(self) -> None:
