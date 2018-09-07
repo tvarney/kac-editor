@@ -14,8 +14,7 @@ class KacMap(object):
     def __init__(self, map_objects, data_file) -> None:
         self._map_objects = map_objects
         self._data_file = data_file
-        # self._tiles = map_objects["Cell+CellSaveData"].classBase.instances
-        self._tiles = map_objects[KacMap.KeyCellSaveData].classBase.instances
+        self._tiles = map_objects[KacMap.KeyCellSaveData].class_base.instances
         self._width = self._map_objects[KacMap.KeyWorldSaveData]["gridWidth"].value
         self._height = self._map_objects[KacMap.KeyWorldSaveData]["gridHeight"].value
         self._name = self._map_objects[KacMap.KeyTownName]["townName"].value

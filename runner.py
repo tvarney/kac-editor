@@ -28,69 +28,67 @@ def process_mouse_event(event, screen, map_object: KacMap):
         pos /= 66
         pos = int(pos)
 
-        if event[1] >= 60 and event[1] <= 126:
+        if 60 <= event[1] <= 126:
             if pos == 0:
                 selectedCellType = TYPE_WATER_SALT
             elif pos == 1:
                 selectedCellType = TYPE_WATER_FRESH
             else:
                 selectedCellType = TYPE_WATER_DEEP
-
-        elif event[1] >= 172 and event[1] <= 238:
+        elif 172 <= event[1] <= 238:
             if pos == 0:
                 selectedCellType = TYPE_FARM_BARREN
             elif pos == 1:
                 selectedCellType = TYPE_FARM_FERTILE
             elif pos == 2:
                 selectedCellType = TYPE_FARM_FERTILE_PLUS
-        elif event[1] >= 278 and event[1] <= 344:
+        elif 278 <= event[1] <= 344:
             if pos == 0:
                 selectedCellType = TYPE_RES_ROCK
             elif pos == 1:
                 selectedCellType = TYPE_RES_STONE
             elif pos == 2:
                 selectedCellType = TYPE_RES_IRON
-        elif event[1] >= 384 and event[1] <= 450:
+        elif 384 <= event[1] <= 450:
             if pos == 0:
                 selectedCellType = TYPE_TREE_TREE
             elif pos == 1:
                 selectedCellType = TYPE_TREE_NOTREE
-
     else:
         tile_factor = map_object.width / 640.0
         tile_x = map_object.width - int(event[0] * tile_factor) - 1
         tile_y = int(event[1] * tile_factor)
-        selectedTile = map_object.tiles[tile_y * map_object.width + tile_x]
+        selected_tile = map_object.tiles[tile_y * map_object.width + tile_x]
         if selectedCellType == TYPE_WATER_DEEP:
-            selectedTile["type"]["value__"].update(map_object.file, 3)
-            selectedTile["deepWater"].update(map_object.file, True)
+            selected_tile["type"]["value__"].update(map_object.file, 3)
+            selected_tile["deepWater"].update(map_object.file, True)
         elif selectedCellType == TYPE_WATER_FRESH:
-            selectedTile["type"]["value__"].update(map_object.file, 3)
-            selectedTile["deepWater"].update(map_object.file, False)
-            selectedTile["saltWater"].update(map_object.file, False)
+            selected_tile["type"]["value__"].update(map_object.file, 3)
+            selected_tile["deepWater"].update(map_object.file, False)
+            selected_tile["saltWater"].update(map_object.file, False)
         elif selectedCellType == TYPE_WATER_SALT:
-            selectedTile["type"]["value__"].update(map_object.file, 3)
-            selectedTile["deepWater"].update(map_object.file, False)
-            selectedTile["saltWater"].update(map_object.file, True)
+            selected_tile["type"]["value__"].update(map_object.file, 3)
+            selected_tile["deepWater"].update(map_object.file, False)
+            selected_tile["saltWater"].update(map_object.file, True)
         elif selectedCellType == TYPE_FARM_BARREN:
-            selectedTile["type"]["value__"].update(map_object.file, 0)
-            selectedTile["fertile"].update(map_object.file, 0)
+            selected_tile["type"]["value__"].update(map_object.file, 0)
+            selected_tile["fertile"].update(map_object.file, 0)
         elif selectedCellType == TYPE_FARM_FERTILE:
-            selectedTile["type"]["value__"].update(map_object.file, 0)
-            selectedTile["fertile"].update(map_object.file, 1)
+            selected_tile["type"]["value__"].update(map_object.file, 0)
+            selected_tile["fertile"].update(map_object.file, 1)
         elif selectedCellType == TYPE_FARM_FERTILE_PLUS:
-            selectedTile["type"]["value__"].update(map_object.file, 0)
-            selectedTile["fertile"].update(map_object.file, 2)
+            selected_tile["type"]["value__"].update(map_object.file, 0)
+            selected_tile["fertile"].update(map_object.file, 2)
         elif selectedCellType == TYPE_RES_ROCK:
-            selectedTile["type"]["value__"].update(map_object.file, 4)
+            selected_tile["type"]["value__"].update(map_object.file, 4)
         elif selectedCellType == TYPE_RES_STONE:
-            selectedTile["type"]["value__"].update(map_object.file, 2)
+            selected_tile["type"]["value__"].update(map_object.file, 2)
         elif selectedCellType == TYPE_RES_IRON:
-            selectedTile["type"]["value__"].update(map_object.file, 5)
+            selected_tile["type"]["value__"].update(map_object.file, 5)
         elif selectedCellType == TYPE_TREE_TREE:
-            selectedTile["amount"].update(map_object.file, 3)
+            selected_tile["amount"].update(map_object.file, 3)
         elif selectedCellType == TYPE_TREE_NOTREE:
-            selectedTile["amount"].update(map_object.file, 0)
+            selected_tile["amount"].update(map_object.file, 0)
 
         map_object.draw(screen, 640)
 

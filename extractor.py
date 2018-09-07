@@ -1,5 +1,4 @@
 
-import sys
 import struct
 import time
 
@@ -24,7 +23,7 @@ def register_object_id(object_id: IdentifiableObject):
 
 def get_object_from_id(object_id) -> 'Optional[IdentifiableObject]':
     for obj in objectIds:
-        if obj.objectId == object_id:
+        if obj.object_id == object_id:
             return obj
 
 
@@ -144,55 +143,55 @@ def get_values(file, member_type_info_list, instance: ObjectInstance):
 
         if member_type_info == BinaryTypeEnumeration.Primitive:
             if additional_info == PrimitiveTypeEnumeration.Boolean:
-                instance.addValue(get_boolean(file))
+                instance.add_value(get_boolean(file))
             elif additional_info == PrimitiveTypeEnumeration.Byte:
-                instance.addValue(get_byte(file))
+                instance.add_value(get_byte(file))
             elif additional_info == PrimitiveTypeEnumeration.Char:
-                instance.addValue(get_char(file))
+                instance.add_value(get_char(file))
             elif additional_info == PrimitiveTypeEnumeration.Decimal:
-                instance.addValue(get_decimal(file))
+                instance.add_value(get_decimal(file))
             elif additional_info == PrimitiveTypeEnumeration.Double:
-                instance.addValue(get_double(file))
+                instance.add_value(get_double(file))
             elif additional_info == PrimitiveTypeEnumeration.Int16:
-                instance.addValue(get_int(file, 2))
+                instance.add_value(get_int(file, 2))
             elif additional_info == PrimitiveTypeEnumeration.Int32:
-                instance.addValue(get_typed_int32(file))
+                instance.add_value(get_typed_int32(file))
             elif additional_info == PrimitiveTypeEnumeration.Int64:
-                instance.addValue(get_int(file, 8))
+                instance.add_value(get_int(file, 8))
             elif additional_info == PrimitiveTypeEnumeration.SByte:
-                instance.addValue(get_signed_byte(file))
+                instance.add_value(get_signed_byte(file))
             elif additional_info == PrimitiveTypeEnumeration.Single:
-                instance.addValue(get_single(file))
+                instance.add_value(get_single(file))
             elif additional_info == PrimitiveTypeEnumeration.TimeSpan:
-                instance.addValue(get_time_span(file))
+                instance.add_value(get_time_span(file))
             elif additional_info == PrimitiveTypeEnumeration.DateTime:
-                instance.addValue(get_date_time(file))
+                instance.add_value(get_date_time(file))
             elif additional_info == PrimitiveTypeEnumeration.UInt16:
-                instance.addValue(get_unsigned_int(file, 2))
+                instance.add_value(get_unsigned_int(file, 2))
             elif additional_info == PrimitiveTypeEnumeration.UInt32:
-                instance.addValue(get_unsigned_int(file, 4))
+                instance.add_value(get_unsigned_int(file, 4))
             elif additional_info == PrimitiveTypeEnumeration.UInt64:
-                instance.addValue(get_unsigned_int(file, 8))
+                instance.add_value(get_unsigned_int(file, 8))
             elif additional_info == PrimitiveTypeEnumeration.Null:
-                instance.addValue(get_null(file))
+                instance.add_value(get_null(file))
             elif additional_info == PrimitiveTypeEnumeration.String:
-                instance.addValue(get_string(file))
+                instance.add_value(get_string(file))
             else:
                 raise RuntimeError("Unknown primitive type {}".format(additional_info))
         elif member_type_info == BinaryTypeEnumeration.String:
-            instance.addValue(read_record_type_enum(file))
+            instance.add_value(read_record_type_enum(file))
         elif member_type_info == BinaryTypeEnumeration.Object:
-            instance.addValue(read_record_type_enum(file))
+            instance.add_value(read_record_type_enum(file))
         elif member_type_info == BinaryTypeEnumeration.SystemClass:
-            instance.addValue(read_record_type_enum(file))
+            instance.add_value(read_record_type_enum(file))
         elif member_type_info == BinaryTypeEnumeration.Class:
-            instance.addValue(read_record_type_enum(file))
+            instance.add_value(read_record_type_enum(file))
         elif member_type_info == BinaryTypeEnumeration.ObjectArray:
-            instance.addValue(read_record_type_enum(file))
+            instance.add_value(read_record_type_enum(file))
         elif member_type_info == BinaryTypeEnumeration.StringArray:
-            instance.addValue(read_record_type_enum(file))
+            instance.add_value(read_record_type_enum(file))
         elif member_type_info == BinaryTypeEnumeration.PrimitiveArray:
-            instance.addValue(read_record_type_enum(file))
+            instance.add_value(read_record_type_enum(file))
         else:
             raise RuntimeError("member_type_info {} is invalid".format(member_type_info))
 
@@ -238,7 +237,7 @@ def get_class_type_info(file):
 def get_member_type_info(file, class_info):
     binary_types = list()
 
-    for i in range(0, class_info.memberCount):
+    for i in range(0, class_info.member_count):
         binary_types.append(get_int(file))
 
     additional_info = list()
@@ -278,8 +277,8 @@ def get_class_with_id(file):
     # TODO: Check if making the above an exception breaks anything
 
     new_instance = ObjectInstance(object_id, metadata_id)
-    update_object.extradata.registerInstance(new_instance)
-    get_values(file, update_object.extradata.memberTypeInfo, new_instance)
+    update_object.extra_data.register_instance(new_instance)
+    get_values(file, update_object.extra_data.member_type_info, new_instance)
 
     return new_instance
 
@@ -298,7 +297,7 @@ def get_class_with_members_and_types(file):
     _ = get_int(file, 4)  # library_id
     class_object = ClassWithMembersAndTypes(class_info, member_type_info)
     get_values(file, member_type_info, class_object.instances[0])
-    register_object_id(IdentifiableObject(class_info.objectId, class_object))
+    register_object_id(IdentifiableObject(class_info.object_id, class_object))
     return class_object.instances[0]
 
 
@@ -308,7 +307,7 @@ def get_system_class_with_members_and_types(file):
     member_type_info = get_member_type_info(file, class_info)
     class_object = ClassWithMembersAndTypes(class_info, member_type_info)
     _ = get_values(file, member_type_info, class_object.instances[0])  # values
-    register_object_id(IdentifiableObject(class_info.objectId, class_object))
+    register_object_id(IdentifiableObject(class_info.object_id, class_object))
     return class_object.instances[0]
 
 
@@ -410,7 +409,7 @@ def read_record_type_enum(file, top_level: bool=False):
     elif bin_type == RecordTypeEnumeration.ClassWithMembersAndTypes:
         val = get_class_with_members_and_types(file)
         if top_level:
-            parentlessObjects[val.classBase.classInfo.name] = val
+            parentlessObjects[val.class_base.class_info.name] = val
         return val
     elif bin_type == RecordTypeEnumeration.BinaryObjectString:
         return read_binary_object_string(file)
