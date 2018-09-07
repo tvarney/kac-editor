@@ -17,12 +17,38 @@ def center_rect(outer: Rect, inner: 'Tuple[int, int]') -> Rect:
     return Rect(x + outer.x, y + outer.y, inner[0], inner[1])
 
 
-class Renderable(object):
+class Widget(object):
     def __init__(self, x: int, y: int, width: int, height: int) -> None:
         self._x = x
         self._y = y
         self._width = width
         self._height = height
+        self._dirty = True
+        self._parent = None
+        self._active = False
+
+    @property
+    def parent(self) -> 'Widget':
+        return self._parent
+
+    @parent.setter
+    def parent(self, parent: 'Widget') -> None:
+        print("Setting parent of {} to {}".format(self, parent))
+        self._dirty = True
+        self._parent = parent
+        self._parent.dirty = True
+
+    @property
+    def dirty(self) -> bool:
+        return self._dirty
+
+    @dirty.setter
+    def dirty(self, on: bool) -> None:
+        if on and not self._dirty and self._parent is not None:
+            self._dirty = on
+            self.parent.dirty = True
+        else:
+            self._dirty = on
 
     @property
     def x(self) -> int:
@@ -56,46 +82,50 @@ class Renderable(object):
     def rect(self) -> Rect:
         return Rect(self._x, self._y, self._width, self._height)
 
+    def contains(self, pos: 'Tuple[int, int]') -> bool:
+        x, y = self.origin
+        width, height = self.dimensions
+        return x <= pos[0] <= (x + width) and y <= pos[1] <= (y + height)
+
     def render(self, screen: 'pygame.Surface') -> None:
+        self._dirty = False
+
+    def set_active(self, on: bool=True) -> None:
+        self._active = on
+
+    def is_active(self) -> bool:
+        return self._active
+
+    def click(self, x, y) -> None:
         pass
 
 
-class Gui(Renderable):
-    def __init__(self, x: int, y: int, width: int, height: int, **kwargs) -> None:
-        Renderable.__init__(self, x, y, width, height)
-        self._children = list()  # type: List[Renderable]
-        self._font = kwargs.pop("font", None)
-        if self._font is None:
-            self._font = pygame.font.SysFont("Arial", 20)
-        self.build()
+class Container(Widget):
+    def __init__(self, x: int, y: int, width: int, height: int) -> None:
+        Widget.__init__(self, x, y, width, height)
+        self._children = list()  # type: List[Widget]
 
-    def render(self, screen) -> None:
+    def render(self, screen: 'pygame.Surface') -> None:
         for child in self._children:
-            child.render(screen)
+            if child.dirty:
+                child.render(screen)
+        self._dirty = False
 
-    def build(self) -> None:
+    def add(self, child: 'Widget') -> None:
+        self._children.append(child)
+        print("Adding child {} to {}".format(child, self))
+        child.parent = self
+
+    def clear(self) -> None:
         self._children.clear()
-        self._children.append(Label(self.x, 30, "Water", self._font, width=self.width, centered=True))
-        self._children.append(PushButton(self.x + 2, self.y + 60, "Salt", self._font, width=66, height=66))
-        self._children.append(PushButton(self.x + 70, self.y + 60, "Fresh", self._font, width=66, height=66))
-        self._children.append(PushButton(self.x + 138, self.y + 60, "Deep", self._font, width=66, height=66))
 
-        self._children.append(Label(self.x, 136, "Land", self._font, width=self.width, centered=True))
-        self._children.append(PushButton(self.x + 2, self.y + 166, "Barren", self._font, width=66, height=66))
-        self._children.append(PushButton(self.x + 70, self.y + 166, "Fertile", self._font, width=66, height=66))
-        self._children.append(PushButton(self.x + 138, self.y + 166, "Fertile+", self._font, width=66, height=66))
-
-        self._children.append(Label(self._x, 242, "Resources", self._font, width=self.width, centered=True))
-        self._children.append(PushButton(self.x + 2, self.y + 272, "Rock", self._font, width=66, height=66))
-        self._children.append(PushButton(self.x + 70, self.y + 272, "Stone", self._font, width=66, height=66))
-        self._children.append(PushButton(self.x + 138, self.y + 272, "Iron", self._font, width=66, height=66))
-
-        self._children.append(Label(self._x, 348, "Trees", self._font, width=self.width, centered=True))
-        self._children.append(PushButton(self.x + 1, self.y + 378, "Trees", self._font, width=66, height=66))
-        self._children.append(PushButton(self.x + 70, self.y + 378, "No Trees", self._font, width=66, height=66))
+    def click(self, x: int, y: int) -> None:
+        for child in self._children:
+            if child.contains((x, y)):
+                child.click(x, y)
 
 
-class Label(Renderable):
+class Label(Widget):
     def __init__(self, x: int, y: int, title: str, font: 'pygame.font.Font', **kwargs) -> None:
         self._text = title
         self._text_size = font.size(title)
@@ -108,13 +138,14 @@ class Label(Renderable):
         self._text_origin = x, y
         if self._centered:
             self._text_origin = x + center_dim(width, self._text_size[0]), y + center_dim(height, self._text_size[1])
-        Renderable.__init__(self, x, y, width, height)
+        Widget.__init__(self, x, y, width, height)
 
     def render(self, screen: 'pygame.Surface') -> None:
         screen.blit(self._text_surface, self._text_origin, None, 1)
+        self._dirty = False
 
 
-class PushButton(Renderable):
+class PushButton(Widget):
     def __init__(self, x: int, y: int, title: str, font: 'pygame.font.Font', **kwargs) -> None:
         self._title = title
         self._font = font
@@ -126,18 +157,26 @@ class PushButton(Renderable):
         self._padding = max(kwargs.pop("padding", 2), 2)
         self._text_size = font.size(self._title)
         self._text_surface = font.render(self._title, self._anti_alias, self._color)
+        self.action = kwargs.pop("action", None)
         width = max(self._text_size[0] + self._padding * 2, kwargs.pop("width", 0))
         height = max(self._text_size[1] + self._padding * 2, kwargs.pop("height", 0))
-        Renderable.__init__(self, x, y, width, height)
+        Widget.__init__(self, x, y, width, height)
         self._inner_area = Rect(x + 1, y + 1, self.width - 2, self.height - 2)
         self._text_area = center_rect(self._inner_area, self._text_size)
+        self._active = False
+
+    def set_active(self, on: bool=True) -> None:
+        if self._active != on:
+            self.dirty = True
+        self._active = on
 
     def render(self, screen: 'pygame.Surface'):
         pygame.draw.rect(screen, self._border_color, self.rect, 1)
-        pygame.draw.rect(screen, self._back_color_inactive, self._inner_area, 0)
+        back_color = self._back_color_active if self.is_active() else self._back_color_inactive
+        pygame.draw.rect(screen, back_color, self._inner_area, 0)
         screen.blit(self._text_surface, self._text_area.topleft, None, 1)
+        self._dirty = False
 
-    def contains(self, pos: 'Tuple[int, int]') -> bool:
-        x, y = self.origin
-        width, height = self.dimensions
-        return x <= pos[0] <= (x + width) and y <= pos[1] <= (y + height)
+    def click(self, x: int, y: int) -> None:
+        if self.action is not None:
+            self.action(self)

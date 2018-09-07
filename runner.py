@@ -8,7 +8,11 @@ import shutil
 from kac import colors
 from kac.extractor import parse_save_file, write_save_file
 from kac.map import KacMap
-from kac.gui import Gui
+from kac.gui import Container, Label, PushButton
+
+import typing
+if typing.TYPE_CHECKING:
+    from kac.gui import Widget
 
 
 class Application(object):
@@ -37,6 +41,8 @@ class Application(object):
         self.data = None
         self.screen = None
         self.small_font = None
+        self.font = None
+        self._last_widget = None
 
     def parse_args(self) -> None:
         print("Application::parse_args()")
@@ -50,8 +56,33 @@ class Application(object):
         print("Application::start_pygame()")
         self.screen = pygame.display.set_mode((844, 640))
         pygame.font.init()
-        self.gui = Gui(640, 0, 204, 640)
+        self.gui = Container(640, 0, 204, 640)
+        self.font = pygame.font.SysFont("Arial", 20)
         self.small_font = pygame.font.SysFont("Arial", 14)
+        self.build_gui()
+
+    def build_gui(self) -> None:
+        gui = self.gui
+        x, y, width, height = gui.bounds
+        gui.add(Label(x, 30, "Water", self.font, width=width, centered=True))
+        gui.add(PushButton(x + 2, y + 60, "Salt", self.font, width=66, height=66, action=self.action_water_salt))
+        gui.add(PushButton(x + 70, y + 60, "Fresh", self.font, width=66, height=66, action=self.action_water_fresh))
+        gui.add(PushButton(x + 138, y + 60, "Deep", self.font, width=66, height=66, action=self.action_water_deep))
+
+        gui.add(Label(x, 136, "Land", self.font, width=width, centered=True))
+        gui.add(PushButton(x + 2, y + 166, "Barren", self.font, width=66, height=66, action=self.action_land_barren))
+        gui.add(PushButton(x + 70, y + 166, "Fertile", self.font, width=66, height=66, action=self.action_land_fertile))
+        gui.add(PushButton(x + 138, y + 166, "Fertile+", self.font, width=66, height=66,
+                           action=self.action_land_very_fertile))
+
+        gui.add(Label(x, 242, "Resources", self.font, width=width, centered=True))
+        gui.add(PushButton(x + 2, y + 272, "Rock", self.font, width=66, height=66, action=self.action_res_rock))
+        gui.add(PushButton(x + 70, y + 272, "Stone", self.font, width=66, height=66, action=self.action_res_stone))
+        gui.add(PushButton(x + 138, y + 272, "Iron", self.font, width=66, height=66, action=self.action_res_iron))
+
+        gui.add(Label(x, 348, "Trees", self.font, width=width, centered=True))
+        gui.add(PushButton(x + 1, y + 378, "Trees", self.font, width=66, height=66, action=self.action_trees))
+        gui.add(PushButton(x + 70, y + 378, "No Trees", self.font, width=66, height=66, action=self.action_no_trees))
 
     def parse_save(self) -> bool:
         print("Application::parse_save()")
@@ -97,7 +128,12 @@ class Application(object):
                     running = False
                     write_save_file(self.save_file, self.map.file)
                 elif event.type == pygame.MOUSEBUTTONDOWN:
-                    self.process_mouse_event(event.pos)
+                    x, y = event.pos[0], event.pos[1]
+                    gui = self.gui  # type: Container
+                    if gui.contains((x, y)):
+                        gui.click(x, y)
+                    else:
+                        self.process_mouse_event(event.pos)
                     is_mouse_down = True
                     pygame.display.flip()
                 elif event.type == pygame.MOUSEBUTTONUP:
@@ -115,6 +151,50 @@ class Application(object):
                         self.map.clear()
                         self.map.draw(self.screen, 640)
                         pygame.display.flip()
+
+    def _handle_click(self, widget: 'Widget', cell_type: int):
+        if self._last_widget is widget:
+            return
+
+        if self._last_widget is not None:
+            last = self._last_widget  # type: Widget
+            last.set_active(False)
+        self.selectedCellType = cell_type
+        self._last_widget = widget
+        widget.set_active(True)
+
+    def action_water_salt(self, widget: 'Widget') -> None:
+        self._handle_click(widget, Application.TYPE_WATER_SALT)
+
+    def action_water_fresh(self, widget: 'Widget') -> None:
+        self._handle_click(widget, Application.TYPE_WATER_FRESH)
+
+    def action_water_deep(self, widget: 'Widget') -> None:
+        self._handle_click(widget, Application.TYPE_WATER_DEEP)
+
+    def action_land_barren(self, widget: 'Widget') -> None:
+        self._handle_click(widget, Application.TYPE_FARM_BARREN)
+
+    def action_land_fertile(self, widget: 'Widget') -> None:
+        self._handle_click(widget, Application.TYPE_FARM_FERTILE)
+
+    def action_land_very_fertile(self, widget: 'Widget') -> None:
+        self._handle_click(widget, Application.TYPE_FARM_FERTILE_PLUS)
+
+    def action_res_rock(self, widget: 'Widget') -> None:
+        self._handle_click(widget, Application.TYPE_RES_ROCK)
+
+    def action_res_stone(self, widget: 'Widget') -> None:
+        self._handle_click(widget, Application.TYPE_RES_STONE)
+
+    def action_res_iron(self, widget: 'Widget') -> None:
+        self._handle_click(widget, Application.TYPE_RES_IRON)
+
+    def action_trees(self, widget: 'Widget') -> None:
+        self._handle_click(widget, Application.TYPE_TREE_TREE)
+
+    def action_no_trees(self, widget: 'Widget') -> None:
+        self._handle_click(widget, Application.TYPE_TREE_NOTREE)
 
     def process_mouse_event(self, event) -> None:
         global selectedCellType
