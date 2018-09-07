@@ -6,7 +6,11 @@ if typing.TYPE_CHECKING:
     from typing import Tuple
 
 
-Unknown = (255, 0, 255)
+White = (255, 255, 255)
+Black = (0, 0, 0)
+Magenta = (255, 0, 255)
+
+Unknown = Magenta
 
 LandBarren = (193, 206, 100)
 LandFertile = (146, 190, 69)

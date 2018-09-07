@@ -2,191 +2,193 @@
 
 import argparse
 import time
-import sys
 import pygame
-from shutil import copyfile
+import shutil
 
+from kac import colors
 from kac.extractor import parse_save_file, write_save_file
 from kac.map import KacMap
-
-selectedCellType = None
-TYPE_WATER_DEEP = 1
-TYPE_WATER_FRESH = 2
-TYPE_WATER_SALT = 3
-TYPE_FARM_BARREN = 4
-TYPE_FARM_FERTILE = 5
-TYPE_FARM_FERTILE_PLUS = 6
-TYPE_RES_ROCK = 7
-TYPE_RES_STONE = 8
-TYPE_RES_IRON = 9
-TYPE_TREE_NOTREE = 10
-TYPE_TREE_TREE = 11
+from kac.gui import Gui
 
 
-def process_mouse_event(event, screen, map_object: KacMap):
-    global selectedCellType
-    if event[0] > 640:
+class Application(object):
+    selectedCellType = None
+    TYPE_WATER_DEEP = 1
+    TYPE_WATER_FRESH = 2
+    TYPE_WATER_SALT = 3
+    TYPE_FARM_BARREN = 4
+    TYPE_FARM_FERTILE = 5
+    TYPE_FARM_FERTILE_PLUS = 6
+    TYPE_RES_ROCK = 7
+    TYPE_RES_STONE = 8
+    TYPE_RES_IRON = 9
+    TYPE_TREE_NOTREE = 10
+    TYPE_TREE_TREE = 11
 
-        pos = event[0] - 640
-        pos /= 66
-        pos = int(pos)
+    def __init__(self) -> None:
+        self.map = None
+        self.gui = None
+        self.parser = argparse.ArgumentParser(description="Kingdoms and Castles map editor")
+        self.parser.add_argument("--input", "-i", help="The path to a KaC save file")
+        self.parser.add_argument("--gui", "-g", help="Launches the GUI", action="store_true")
+        self._run_gui = True
+        self.save_file = None
+        self.objects = None
+        self.data = None
+        self.screen = None
+        self.small_font = None
 
-        if 60 <= event[1] <= 126:
-            if pos == 0:
-                selectedCellType = TYPE_WATER_SALT
-            elif pos == 1:
-                selectedCellType = TYPE_WATER_FRESH
-            else:
-                selectedCellType = TYPE_WATER_DEEP
-        elif 172 <= event[1] <= 238:
-            if pos == 0:
-                selectedCellType = TYPE_FARM_BARREN
-            elif pos == 1:
-                selectedCellType = TYPE_FARM_FERTILE
-            elif pos == 2:
-                selectedCellType = TYPE_FARM_FERTILE_PLUS
-        elif 278 <= event[1] <= 344:
-            if pos == 0:
-                selectedCellType = TYPE_RES_ROCK
-            elif pos == 1:
-                selectedCellType = TYPE_RES_STONE
-            elif pos == 2:
-                selectedCellType = TYPE_RES_IRON
-        elif 384 <= event[1] <= 450:
-            if pos == 0:
-                selectedCellType = TYPE_TREE_TREE
-            elif pos == 1:
-                selectedCellType = TYPE_TREE_NOTREE
-    else:
-        tile_factor = map_object.width / 640.0
-        tile_x = map_object.width - int(event[0] * tile_factor) - 1
-        tile_y = int(event[1] * tile_factor)
-        selected_tile = map_object.tiles[tile_y * map_object.width + tile_x]
-        if selectedCellType == TYPE_WATER_DEEP:
-            selected_tile["type"]["value__"].update(map_object.file, 3)
-            selected_tile["deepWater"].update(map_object.file, True)
-        elif selectedCellType == TYPE_WATER_FRESH:
-            selected_tile["type"]["value__"].update(map_object.file, 3)
-            selected_tile["deepWater"].update(map_object.file, False)
-            selected_tile["saltWater"].update(map_object.file, False)
-        elif selectedCellType == TYPE_WATER_SALT:
-            selected_tile["type"]["value__"].update(map_object.file, 3)
-            selected_tile["deepWater"].update(map_object.file, False)
-            selected_tile["saltWater"].update(map_object.file, True)
-        elif selectedCellType == TYPE_FARM_BARREN:
-            selected_tile["type"]["value__"].update(map_object.file, 0)
-            selected_tile["fertile"].update(map_object.file, 0)
-        elif selectedCellType == TYPE_FARM_FERTILE:
-            selected_tile["type"]["value__"].update(map_object.file, 0)
-            selected_tile["fertile"].update(map_object.file, 1)
-        elif selectedCellType == TYPE_FARM_FERTILE_PLUS:
-            selected_tile["type"]["value__"].update(map_object.file, 0)
-            selected_tile["fertile"].update(map_object.file, 2)
-        elif selectedCellType == TYPE_RES_ROCK:
-            selected_tile["type"]["value__"].update(map_object.file, 4)
-        elif selectedCellType == TYPE_RES_STONE:
-            selected_tile["type"]["value__"].update(map_object.file, 2)
-        elif selectedCellType == TYPE_RES_IRON:
-            selected_tile["type"]["value__"].update(map_object.file, 5)
-        elif selectedCellType == TYPE_TREE_TREE:
-            selected_tile["amount"].update(map_object.file, 3)
-        elif selectedCellType == TYPE_TREE_NOTREE:
-            selected_tile["amount"].update(map_object.file, 0)
+    def parse_args(self) -> None:
+        print("Application::parse_args()")
+        args = self.parser.parse_args()
+        self.save_file = args.input
+        if args.gui is None:
+            print("  Running without GUI")
+            self._run_gui = False
 
-        map_object.draw(screen, 640)
-
-
-def main():
-    parser = argparse.ArgumentParser(description="Kingdoms and Castles save editor.")
-    parser.add_argument("--input", "-i", help="the path to your save file")
-    parser.add_argument("--gui", "-g", help="launches the GUI", action="store_true")
-    args = parser.parse_args()
-
-    savefile = args.input if args.input is not None else "./test/world"
-    savefile_backup = savefile + "-" + time.strftime("%Y%m%d%H%M%S")
-    print("Making a backup copy of", savefile, "to", savefile_backup)
-    try:
-        copyfile(savefile, savefile_backup)
-    except FileNotFoundError:
-        print("The savefile does not exists !")
-        sys.exit(1)
-
-    main_objects, data_file = parse_save_file(savefile_backup)
-    kac_map = KacMap(main_objects, data_file)
-    print("Loaded save for town {}".format(kac_map.name))
-    print("The map is {} by {}".format(kac_map.width, kac_map.height))
-
-    if args.gui != None:
-        print("Loading GUI...")
-        screen = pygame.display.set_mode((840, 640))
+    def start_pygame(self) -> None:
+        print("Application::start_pygame()")
+        self.screen = pygame.display.set_mode((844, 640))
         pygame.font.init()
-        mainfont = pygame.font.SysFont("Arial", 20)
-        smallfont = pygame.font.SysFont("Arial", 14)
+        self.gui = Gui(640, 0, 204, 640)
+        self.small_font = pygame.font.SysFont("Arial", 14)
 
-        pygame.draw.line(screen, (255, 255, 255), (640, 0), (640, 640))
-        screen.blit(mainfont.render('Water', False, (255, 255, 255)), (700, 30))
-        pygame.draw.rect(screen, (255, 255, 255), pygame.Rect(641, 60, 66, 66), 1)
-        screen.blit(mainfont.render('Salt', False, (255, 255, 255)), (660, 66))
-        pygame.draw.rect(screen, (255, 255, 255), pygame.Rect(707, 60, 66, 66), 1)
-        screen.blit(mainfont.render('Fresh', False, (255, 255, 255)), (716, 66))
-        pygame.draw.rect(screen, (255, 255, 255), pygame.Rect(773, 60, 66, 66), 1)
-        screen.blit(mainfont.render('Deep', False, (255, 255, 255)), (783, 66))
+    def parse_save(self) -> bool:
+        print("Application::parse_save()")
+        if self.save_file is None:
+            print("No Save file chosen; using test data")
+            self.save_file = "./test/world"
 
-        screen.blit(mainfont.render('Farm', False, (255, 255, 255)), (700, 136))
-        pygame.draw.rect(screen, (255, 255, 255), pygame.Rect(641, 166, 66, 66), 1)
-        screen.blit(mainfont.render('Barren', False, (255, 255, 255)), (645, 172))
-        pygame.draw.rect(screen, (255, 255, 255), pygame.Rect(707, 166, 66, 66), 1)
-        screen.blit(mainfont.render('Fertile', False, (255, 255, 255)), (716, 172))
-        pygame.draw.rect(screen, (255, 255, 255), pygame.Rect(773, 166, 66, 66), 1)
-        screen.blit(mainfont.render('Fertile+', False, (255, 255, 255)), (773, 172))
+        backup_file = self.save_file + "-" + time.strftime("%Y%m%d%H%M%S")
+        print("Making a backup copy of {} at {}".format(self.save_file, backup_file))
+        shutil.copyfile(self.save_file, backup_file)
+        self.objects, self.data = parse_save_file(backup_file)
+        self.map = KacMap(self.objects, self.data)
+        print("Loaded save for town {}".format(self.map.name))
+        print("The map is {} by {}".format(self.map.width, self.map.height))
+        return True
 
-        screen.blit(mainfont.render('Ressources', False, (255, 255, 255)), (700, 242))
-        pygame.draw.rect(screen, (255, 255, 255), pygame.Rect(641, 272, 66, 66), 1)
-        screen.blit(mainfont.render('Rock', False, (255, 255, 255)), (645, 278))
-        pygame.draw.rect(screen, (255, 255, 255), pygame.Rect(707, 272, 66, 66), 1)
-        screen.blit(mainfont.render('Stone', False, (255, 255, 255)), (716, 278))
-        pygame.draw.rect(screen, (255, 255, 255), pygame.Rect(773, 272, 66, 66), 1)
-        screen.blit(mainfont.render('Iron', False, (255, 255, 255)), (773, 278))
+    def render(self) -> None:
+        pygame.draw.line(self.screen, (255, 255, 255), (640, 0), (640, 640))
 
-        screen.blit(mainfont.render('Trees', False, (255, 255, 255)), (700, 348))
-        pygame.draw.rect(screen, (255, 255, 255), pygame.Rect(641, 378, 66, 66), 1)
-        screen.blit(mainfont.render('Trees', False, (255, 255, 255)), (645, 384))
-        pygame.draw.rect(screen, (255, 255, 255), pygame.Rect(707, 378, 66, 66), 1)
-        screen.blit(mainfont.render('Notree', False, (255, 255, 255)), (716, 384))
+        self.gui.render(self.screen)
 
-        screen.blit(smallfont.render('Press F to turn all farms fertile+', False, (255, 255, 255)), (640, 490))
-        screen.blit(smallfont.render('Press C to clear the map', False, (255, 255, 255)), (640, 510))
-
-        kac_map.draw(screen, 640)
+        self.screen.blit(self.small_font.render('Press F to turn all farms fertile+', False, colors.White), (640, 490))
+        self.screen.blit(self.small_font.render('Press C to clear the map', False, colors.White), (640, 510))
+        self.map.draw(self.screen, 640)
         pygame.display.flip()
 
-        running = True
-        isMouseDown = False
-        while running:
-            event = pygame.event.wait()
-            if event.type == pygame.QUIT:
-                running = False
-                write_save_file(savefile, kac_map.file)
-            elif event.type == pygame.MOUSEBUTTONDOWN:
-                process_mouse_event(event.pos, screen, kac_map)
-                isMouseDown = True
-                pygame.display.flip()
-            elif event.type == pygame.MOUSEBUTTONUP:
-                isMouseDown = False
-            elif event.type == pygame.MOUSEMOTION:
-                if isMouseDown:
-                    process_mouse_event(event.pos, screen, kac_map)
+    def main_loop(self):
+        self.parse_args()
+        if not self.parse_save():
+            print("Failed to parse save file; quitting...")
+            return
+
+        if self._run_gui:
+            print("Loading GUI...")
+            self.start_pygame()
+            self.render()
+
+            running = True
+            is_mouse_down = False
+            while running:
+                event = pygame.event.wait()
+                if event.type == pygame.QUIT:
+                    running = False
+                    write_save_file(self.save_file, self.map.file)
+                elif event.type == pygame.MOUSEBUTTONDOWN:
+                    self.process_mouse_event(event.pos)
+                    is_mouse_down = True
                     pygame.display.flip()
-            elif event.type == pygame.KEYDOWN:
-                if event.unicode == "f" or event.unicode == "F":
-                    kac_map.turn_all_farms()
-                    kac_map.draw(screen, 640)
-                    pygame.display.flip()
-                elif event.unicode == "c" or event.unicode == "C":
-                    kac_map.clear()
-                    kac_map.draw(screen, 640)
-                    pygame.display.flip()
+                elif event.type == pygame.MOUSEBUTTONUP:
+                    is_mouse_down = False
+                elif event.type == pygame.MOUSEMOTION:
+                    if is_mouse_down:
+                        self.process_mouse_event(event.pos)
+                        pygame.display.flip()
+                elif event.type == pygame.KEYDOWN:
+                    if event.unicode == "f" or event.unicode == "F":
+                        self.map.turn_all_farms()
+                        self.map.draw(self.screen, 640)
+                        pygame.display.flip()
+                    elif event.unicode == "c" or event.unicode == "C":
+                        self.map.clear()
+                        self.map.draw(self.screen, 640)
+                        pygame.display.flip()
+
+    def process_mouse_event(self, event) -> None:
+        global selectedCellType
+        if event[0] > 640:
+
+            pos = event[0] - 640
+            pos /= 66
+            pos = int(pos)
+
+            if 60 <= event[1] <= 126:
+                if pos == 0:
+                    self.selectedCellType = Application.TYPE_WATER_SALT
+                elif pos == 1:
+                    self.selectedCellType = Application.TYPE_WATER_FRESH
+                else:
+                    self.selectedCellType = Application.TYPE_WATER_DEEP
+            elif 172 <= event[1] <= 238:
+                if pos == 0:
+                    self.selectedCellType = Application.TYPE_FARM_BARREN
+                elif pos == 1:
+                    self.selectedCellType = Application.TYPE_FARM_FERTILE
+                elif pos == 2:
+                    self.selectedCellType = Application.TYPE_FARM_FERTILE_PLUS
+            elif 278 <= event[1] <= 344:
+                if pos == 0:
+                    self.selectedCellType = Application.TYPE_RES_ROCK
+                elif pos == 1:
+                    self.selectedCellType = Application.TYPE_RES_STONE
+                elif pos == 2:
+                    self.selectedCellType = Application.TYPE_RES_IRON
+            elif 384 <= event[1] <= 450:
+                if pos == 0:
+                    self.selectedCellType = Application.TYPE_TREE_TREE
+                elif pos == 1:
+                    self.selectedCellType = Application.TYPE_TREE_NOTREE
+        else:
+            tile_factor = self.map.width / 640.0
+            tile_x = self.map.width - int(event[0] * tile_factor) - 1
+            tile_y = int(event[1] * tile_factor)
+            selected_tile = self.map.tiles[tile_y * self.map.width + tile_x]
+            if self.selectedCellType == Application.TYPE_WATER_DEEP:
+                selected_tile["type"]["value__"].update(self.map.file, 3)
+                selected_tile["deepWater"].update(self.map.file, True)
+            elif self.selectedCellType == Application.TYPE_WATER_FRESH:
+                selected_tile["type"]["value__"].update(self.map.file, 3)
+                selected_tile["deepWater"].update(self.map.file, False)
+                selected_tile["saltWater"].update(self.map.file, False)
+            elif self.selectedCellType == Application.TYPE_WATER_SALT:
+                selected_tile["type"]["value__"].update(self.map.file, 3)
+                selected_tile["deepWater"].update(self.map.file, False)
+                selected_tile["saltWater"].update(self.map.file, True)
+            elif self.selectedCellType == Application.TYPE_FARM_BARREN:
+                selected_tile["type"]["value__"].update(self.map.file, 0)
+                selected_tile["fertile"].update(self.map.file, 0)
+            elif self.selectedCellType == Application.TYPE_FARM_FERTILE:
+                selected_tile["type"]["value__"].update(self.map.file, 0)
+                selected_tile["fertile"].update(self.map.file, 1)
+            elif self.selectedCellType == Application.TYPE_FARM_FERTILE_PLUS:
+                selected_tile["type"]["value__"].update(self.map.file, 0)
+                selected_tile["fertile"].update(self.map.file, 2)
+            elif self.selectedCellType == Application.TYPE_RES_ROCK:
+                selected_tile["type"]["value__"].update(self.map.file, 4)
+            elif self.selectedCellType == Application.TYPE_RES_STONE:
+                selected_tile["type"]["value__"].update(self.map.file, 2)
+            elif self.selectedCellType == Application.TYPE_RES_IRON:
+                selected_tile["type"]["value__"].update(self.map.file, 5)
+            elif self.selectedCellType == Application.TYPE_TREE_TREE:
+                selected_tile["amount"].update(self.map.file, 3)
+            elif self.selectedCellType == Application.TYPE_TREE_NOTREE:
+                selected_tile["amount"].update(self.map.file, 0)
+
+            self.map.draw(self.screen, 640)
 
 
 if __name__ == "__main__":
-    main()
+    app = Application()
+    app.main_loop()

@@ -10,7 +10,7 @@ ARRAY_LIST = []
 
 
 @unique
-class BinaryTypeEnumeration(IntEnum):
+class BinaryType(IntEnum):
     Primitive = 0
     String = 1
     Object = 2
@@ -22,7 +22,7 @@ class BinaryTypeEnumeration(IntEnum):
 
 
 @unique
-class PrimitiveTypeEnumeration(IntEnum):
+class PrimitiveType(IntEnum):
     Boolean = 1
     Byte = 2
     Char = 3
@@ -44,7 +44,7 @@ class PrimitiveTypeEnumeration(IntEnum):
 
 
 @unique
-class RecordTypeEnumeration(IntEnum):
+class RecordType(IntEnum):
     SerializedStreamHeader = 0
     ClassWithId = 1
     SystemClassWithMembers = 2
@@ -68,7 +68,7 @@ class RecordTypeEnumeration(IntEnum):
 
 
 @unique
-class BinaryArrayTypeEnumeration(IntEnum):
+class BinaryArrayType(IntEnum):
     Single = 0
     Jagged = 1
     Rectangular = 2
@@ -164,7 +164,7 @@ class ObjectInstance:
 
 
 class ArrayInstance(ObjectInstance):
-    def __init__(self, array_info: 'ArrayInfo', primitive_type: 'PrimitiveTypeEnumeration'):
+    def __init__(self, array_info: 'ArrayInfo', primitive_type: 'PrimitiveType'):
         ObjectInstance.__init__(self, array_info.object_id, primitive_type)
         ARRAY_LIST.append(self)
         self.array_info = array_info
