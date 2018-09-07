@@ -1,7 +1,7 @@
 import time
 
 from kac.datatypes import *
-from vartypes import *
+from kac.vartypes import *
 
 import typing
 if typing.TYPE_CHECKING:
