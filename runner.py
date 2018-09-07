@@ -1,9 +1,12 @@
 #!/usr/bin/python3
-import argparse, time, sys
+
+import argparse
+import time
+import sys
 import pygame
-from kac.extractor import parse_save_file, write_save_file
 from shutil import copyfile
 
+from kac.extractor import parse_save_file, write_save_file
 from kac.map import KacMap
 
 selectedCellType = None
