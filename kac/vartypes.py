@@ -25,7 +25,7 @@ class MSInteger32(object):
     def update(self, data_array, value):
         v = struct.pack(">I", value)
         data_array[self.position] = v[0]
-        data_array[self.position + 1] = v[1]
-        data_array[self.position + 2] = v[2]
-        data_array[self.position + 3] = v[3]
+        data_array[self.position] = v[1]
+        data_array[self.position] = v[2]
+        data_array[self.position] = v[3]
         self.value = value
