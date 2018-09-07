@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 import argparse, time, sys
 import pygame
-from extractor import parseSaveFile, writeSaveFile
+from extractor import parse_save_file, write_save_file
 from shutil import copyfile
 
 from kac.map import KacMap
@@ -23,11 +23,11 @@ TYPE_TREE_TREE = 11
 def process_mouse_event(event, screen, map_object: KacMap):
     global selectedCellType
     if event[0] > 640:
-    
+
         pos = event[0] - 640
         pos /= 66
         pos = int(pos)
-    
+
         if event[1] >= 60 and event[1] <= 126:
             if pos == 0:
                 selectedCellType = TYPE_WATER_SALT
@@ -35,7 +35,7 @@ def process_mouse_event(event, screen, map_object: KacMap):
                 selectedCellType = TYPE_WATER_FRESH
             else:
                 selectedCellType = TYPE_WATER_DEEP
-            
+
         elif event[1] >= 172 and event[1] <= 238:
             if pos == 0:
                 selectedCellType = TYPE_FARM_BARREN
@@ -49,13 +49,13 @@ def process_mouse_event(event, screen, map_object: KacMap):
             elif pos == 1:
                 selectedCellType = TYPE_RES_STONE
             elif pos == 2:
-                selectedCellType = TYPE_RES_IRON            
+                selectedCellType = TYPE_RES_IRON
         elif event[1] >= 384 and event[1] <= 450:
             if pos == 0:
                 selectedCellType = TYPE_TREE_TREE
             elif pos == 1:
                 selectedCellType = TYPE_TREE_NOTREE
-            
+
     else:
         tile_factor = map_object.width / 640.0
         tile_x = map_object.width - int(event[0] * tile_factor) - 1
@@ -110,7 +110,7 @@ def main():
         print("The savefile does not exists !")
         sys.exit(1)
 
-    main_objects, data_file = parseSaveFile(savefile_backup)
+    main_objects, data_file = parse_save_file(savefile_backup)
     kac_map = KacMap(main_objects, data_file)
     print("Loaded save for town {}".format(kac_map.name))
     print("The map is {} by {}".format(kac_map.width, kac_map.height))
@@ -165,7 +165,7 @@ def main():
             event = pygame.event.wait()
             if event.type == pygame.QUIT:
                 running = False
-                writeSaveFile(savefile, kac_map.file)
+                write_save_file(savefile, kac_map.file)
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 process_mouse_event(event.pos, screen, kac_map)
                 isMouseDown = True
