@@ -2,6 +2,7 @@
 import pygame
 
 import kac.colors as colors
+from kac.brush import Brush
 from kac.gui import Widget
 from kac.tile import TileType, Fertility
 
@@ -73,21 +74,30 @@ class KacMap(object):
 class MapWidget(Widget):
     def __init__(self, x: int, y: int, width: int, height: int, map_object: KacMap) -> None:
         Widget.__init__(self, x, y, width, height)
-        self._map = map_object
+        self.map = map_object
+        self.brush = Brush()
 
     def render(self, screen):
-        tile_size = self.width / self._map.width
-        for i in range(self._map.height):
-            for j in range(self._map.width):
-                tile = self._map.tiles[self._map.height * i + j]
+        if not self._dirty:
+            return
+
+        tile_size = self.width / self.map.width
+        for i in range(self.map.height):
+            for j in range(self.map.width):
+                tile = self.map.tiles[self.map.height * i + j]
                 color = colors.get_tile_color(tile)
-                upper_left = self.x + (self._map.width - j - 1) * tile_size, self.y + i * tile_size
+                upper_left = self.x + (self.map.width - j - 1) * tile_size, self.y + i * tile_size
 
                 screen.fill(color, pygame.Rect(upper_left[0], upper_left[1], tile_size, tile_size))
                 if tile["amount"].value > 0 and tile["type"]["value__"].value == 0:
                         tree_size = int(tile_size / 2.0)
                         screen.fill(colors.Tree, pygame.Rect(upper_left[0] + tree_size, upper_left[1] + tree_size, tree_size, tree_size))
+        self._dirty = False
 
     def click(self, x: int, y: int) -> None:
-        pass
-
+        tile_factor = self.map.width / self.width
+        tile_x = self.map.width - int(x * tile_factor) - 1
+        tile_y = int(y * tile_factor)
+        if 0 <= tile_x < self.map.width and 0 <= tile_y < self.map.height:
+            self.brush.apply(self.map, tile_x, tile_y)
+            self._dirty = True

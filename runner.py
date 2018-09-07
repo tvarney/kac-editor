@@ -32,7 +32,6 @@ class Application(object):
         self.small_font = None
         self.font = None
         self._last_widget = None
-        self._brush = Brush()
 
     def parse_args(self) -> None:
         print("Application::parse_args()")
@@ -126,24 +125,28 @@ class Application(object):
                         gui.click(x, y)
                         if gui.dirty:
                             gui.render(self.screen)
-                    else:
-                        self.process_mouse_event(event.pos)
+                    elif self.map_widget.contains((x, y)):
+                        self.map_widget.click(x, y)
+                        self.map_widget.render(self.screen)
                     is_mouse_down = True
                     pygame.display.flip()
                 elif event.type == pygame.MOUSEBUTTONUP:
                     is_mouse_down = False
                 elif event.type == pygame.MOUSEMOTION:
                     if is_mouse_down:
-                        self.process_mouse_event(event.pos)
+                        self.map_widget.click(event.pos[0], event.pos[1])
+                        self.map_widget.render(self.screen)
                         pygame.display.flip()
                 elif event.type == pygame.KEYDOWN:
                     if event.unicode == "f" or event.unicode == "F":
                         self.map.turn_all_farms()
-                        self.map.draw(self.screen, 640)
+                        self.map_widget.dirty = True
+                        self.map_widget.render(self.screen)
                         pygame.display.flip()
                     elif event.unicode == "c" or event.unicode == "C":
                         self.map.clear()
-                        self.map.draw(self.screen, 640)
+                        self.map_widget.dirty = True
+                        self.map_widget.render(self.screen)
                         pygame.display.flip()
 
     def _handle_click(self, widget: 'Widget', cell_type: int):
@@ -154,7 +157,7 @@ class Application(object):
             last = self._last_widget  # type: Widget
             last.set_active(False)
 
-        self._brush.tile = cell_type
+        self.map_widget.brush.tile = cell_type
         self._last_widget = widget
         widget.set_active(True)
 
@@ -190,19 +193,6 @@ class Application(object):
 
     def action_no_trees(self, widget: 'Widget') -> None:
         self._handle_click(widget, BrushTile.ResourceNoTree)
-
-    def process_mouse_event(self, event) -> None:
-        if event[0] > 640:
-
-            pos = event[0] - 640
-            pos /= 66
-            pos = int(pos)
-        else:
-            tile_factor = self.map.width / 640.0
-            tile_x = self.map.width - int(event[0] * tile_factor) - 1
-            tile_y = int(event[1] * tile_factor)
-            self._brush.apply(self.map, tile_x, tile_y)
-            self.map_widget.render(self.screen)
 
 
 if __name__ == "__main__":
