@@ -132,6 +132,8 @@ class Application(object):
                     gui = self.gui  # type: Container
                     if gui.contains((x, y)):
                         gui.click(x, y)
+                        if gui.dirty:
+                            gui.render(self.screen)
                     else:
                         self.process_mouse_event(event.pos)
                     is_mouse_down = True
