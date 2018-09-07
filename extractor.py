@@ -79,8 +79,16 @@ def get_date_time(file):
     raise NotImplementedError("get_date_time")
 
 
-def get_unsigned_int(file, size: int=1):
-    raise NotImplementedError("get_unsigned_int")
+def get_unsigned_int(file, size: int=1) -> int:
+    if size == 1:
+        return struct.unpack("<B", file.read(1))[0]
+    if size == 2:
+        return struct.unpack("<H", file.read(2))[0]
+    if size == 4:
+        return struct.unpack("<I", file.read(4))[0]
+    if size == 8:
+        return struct.unpack("<Q", file.read(8))[0]
+    raise ValueError("Invalid unsigned int size {}: must be one of 1, 2, 4, or 8".format(size))
 
 
 def get_null(file):
