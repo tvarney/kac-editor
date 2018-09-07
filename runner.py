@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 import argparse, time, sys
 import pygame
-from extractor import parse_save_file, write_save_file
+from kac.extractor import parse_save_file, write_save_file
 from shutil import copyfile
 
 from kac.map import KacMap

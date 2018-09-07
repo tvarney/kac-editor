@@ -6,13 +6,14 @@ import os
 try:
     import py2exe
     import py2exe.build_exe
+    # noinspection PyUnresolvedReferences
     import py2exe.build_exe.isSystemDLL
 except ImportError:
     pass
 else:
     origIsSystemDLL = py2exe.build_exe.isSystemDLL
 
-    def isSystemDLL(pathname):
+    def is_system_dll(pathname):
         if os.path.basename(pathname).lower() in {
             "libfreetype-6.dll",
             "sdl_ttf.dll",
@@ -21,7 +22,7 @@ else:
             return 0
         return origIsSystemDLL(pathname)
 
-    py2exe.build_exe.isSystemDLL = isSystemDLL
+    py2exe.build_exe.isSystemDLL = is_system_dll
 
 
 setup(
@@ -33,7 +34,7 @@ setup(
     zip_safe=True,
     install_requires=['distribute', 'pygame'],
     keywords='pygame windows launcher',
-    options = {
+    options={
         'py2exe': {
             'bundle_files': 1,
             'compressed': True,
@@ -49,13 +50,13 @@ setup(
             ]
         },
     },
-    windows = [
+    windows=[
         {
             'script': "runner.py",
             'icon_resources': [(0, "pygame.ico")],
         }
     ],
-    zipfile = None,
+    zipfile=None,
     classifiers=[
         "Classifier: Development Status :: 5 - Production/Stable",
         "Classifier: Environment :: Win32 (MS Windows)",

@@ -1,8 +1,6 @@
-
-import struct
 import time
 
-from datatypes import *
+from kac.datatypes import *
 from vartypes import *
 
 import typing
