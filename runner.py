@@ -6,8 +6,9 @@ import pygame
 import shutil
 
 from kac import colors
+from kac.brush import Brush, BrushTile
 from kac.extractor import parse_save_file, write_save_file
-from kac.map import KacMap
+from kac.map import KacMap, MapWidget
 from kac.gui import Container, Label, PushButton
 
 import typing
@@ -16,22 +17,10 @@ if typing.TYPE_CHECKING:
 
 
 class Application(object):
-    selectedCellType = None
-    TYPE_WATER_DEEP = 1
-    TYPE_WATER_FRESH = 2
-    TYPE_WATER_SALT = 3
-    TYPE_FARM_BARREN = 4
-    TYPE_FARM_FERTILE = 5
-    TYPE_FARM_FERTILE_PLUS = 6
-    TYPE_RES_ROCK = 7
-    TYPE_RES_STONE = 8
-    TYPE_RES_IRON = 9
-    TYPE_TREE_NOTREE = 10
-    TYPE_TREE_TREE = 11
-
     def __init__(self) -> None:
         self.map = None
         self.gui = None
+        self.map_widget = None
         self.parser = argparse.ArgumentParser(description="Kingdoms and Castles map editor")
         self.parser.add_argument("--input", "-i", help="The path to a KaC save file")
         self.parser.add_argument("--gui", "-g", help="Launches the GUI", action="store_true")
@@ -43,6 +32,7 @@ class Application(object):
         self.small_font = None
         self.font = None
         self._last_widget = None
+        self._brush = Brush()
 
     def parse_args(self) -> None:
         print("Application::parse_args()")
@@ -57,6 +47,7 @@ class Application(object):
         self.screen = pygame.display.set_mode((844, 640))
         pygame.font.init()
         self.gui = Container(640, 0, 204, 640)
+        self.map_widget = MapWidget(0, 0, 640, 640, self.map)
         self.font = pygame.font.SysFont("Arial", 20)
         self.small_font = pygame.font.SysFont("Arial", 14)
         self.build_gui()
@@ -102,11 +93,12 @@ class Application(object):
     def render(self) -> None:
         pygame.draw.line(self.screen, (255, 255, 255), (640, 0), (640, 640))
 
+        self.map_widget.render(self.screen)
         self.gui.render(self.screen)
 
         self.screen.blit(self.small_font.render('Press F to turn all farms fertile+', False, colors.White), (640, 490))
         self.screen.blit(self.small_font.render('Press C to clear the map', False, colors.White), (640, 510))
-        self.map.draw(self.screen, 640)
+        # self.map.draw(self.screen, 640)
         pygame.display.flip()
 
     def main_loop(self):
@@ -161,114 +153,56 @@ class Application(object):
         if self._last_widget is not None:
             last = self._last_widget  # type: Widget
             last.set_active(False)
-        self.selectedCellType = cell_type
+
+        self._brush.tile = cell_type
         self._last_widget = widget
         widget.set_active(True)
 
     def action_water_salt(self, widget: 'Widget') -> None:
-        self._handle_click(widget, Application.TYPE_WATER_SALT)
+        self._handle_click(widget, BrushTile.WaterSalt)
 
     def action_water_fresh(self, widget: 'Widget') -> None:
-        self._handle_click(widget, Application.TYPE_WATER_FRESH)
+        self._handle_click(widget, BrushTile.WaterFresh)
 
     def action_water_deep(self, widget: 'Widget') -> None:
-        self._handle_click(widget, Application.TYPE_WATER_DEEP)
+        self._handle_click(widget, BrushTile.WaterDeep)
 
     def action_land_barren(self, widget: 'Widget') -> None:
-        self._handle_click(widget, Application.TYPE_FARM_BARREN)
+        self._handle_click(widget, BrushTile.LandBarren)
 
     def action_land_fertile(self, widget: 'Widget') -> None:
-        self._handle_click(widget, Application.TYPE_FARM_FERTILE)
+        self._handle_click(widget, BrushTile.LandFertile)
 
     def action_land_very_fertile(self, widget: 'Widget') -> None:
-        self._handle_click(widget, Application.TYPE_FARM_FERTILE_PLUS)
+        self._handle_click(widget, BrushTile.LandVeryFertile)
 
     def action_res_rock(self, widget: 'Widget') -> None:
-        self._handle_click(widget, Application.TYPE_RES_ROCK)
+        self._handle_click(widget, BrushTile.ResourceRock)
 
     def action_res_stone(self, widget: 'Widget') -> None:
-        self._handle_click(widget, Application.TYPE_RES_STONE)
+        self._handle_click(widget, BrushTile.ResourceStone)
 
     def action_res_iron(self, widget: 'Widget') -> None:
-        self._handle_click(widget, Application.TYPE_RES_IRON)
+        self._handle_click(widget, BrushTile.ResourceIron)
 
     def action_trees(self, widget: 'Widget') -> None:
-        self._handle_click(widget, Application.TYPE_TREE_TREE)
+        self._handle_click(widget, BrushTile.ResourceTree)
 
     def action_no_trees(self, widget: 'Widget') -> None:
-        self._handle_click(widget, Application.TYPE_TREE_NOTREE)
+        self._handle_click(widget, BrushTile.ResourceNoTree)
 
     def process_mouse_event(self, event) -> None:
-        global selectedCellType
         if event[0] > 640:
 
             pos = event[0] - 640
             pos /= 66
             pos = int(pos)
-
-            if 60 <= event[1] <= 126:
-                if pos == 0:
-                    self.selectedCellType = Application.TYPE_WATER_SALT
-                elif pos == 1:
-                    self.selectedCellType = Application.TYPE_WATER_FRESH
-                else:
-                    self.selectedCellType = Application.TYPE_WATER_DEEP
-            elif 172 <= event[1] <= 238:
-                if pos == 0:
-                    self.selectedCellType = Application.TYPE_FARM_BARREN
-                elif pos == 1:
-                    self.selectedCellType = Application.TYPE_FARM_FERTILE
-                elif pos == 2:
-                    self.selectedCellType = Application.TYPE_FARM_FERTILE_PLUS
-            elif 278 <= event[1] <= 344:
-                if pos == 0:
-                    self.selectedCellType = Application.TYPE_RES_ROCK
-                elif pos == 1:
-                    self.selectedCellType = Application.TYPE_RES_STONE
-                elif pos == 2:
-                    self.selectedCellType = Application.TYPE_RES_IRON
-            elif 384 <= event[1] <= 450:
-                if pos == 0:
-                    self.selectedCellType = Application.TYPE_TREE_TREE
-                elif pos == 1:
-                    self.selectedCellType = Application.TYPE_TREE_NOTREE
         else:
             tile_factor = self.map.width / 640.0
             tile_x = self.map.width - int(event[0] * tile_factor) - 1
             tile_y = int(event[1] * tile_factor)
-            selected_tile = self.map.tiles[tile_y * self.map.width + tile_x]
-            if self.selectedCellType == Application.TYPE_WATER_DEEP:
-                selected_tile["type"]["value__"].update(self.map.file, 3)
-                selected_tile["deepWater"].update(self.map.file, True)
-            elif self.selectedCellType == Application.TYPE_WATER_FRESH:
-                selected_tile["type"]["value__"].update(self.map.file, 3)
-                selected_tile["deepWater"].update(self.map.file, False)
-                selected_tile["saltWater"].update(self.map.file, False)
-            elif self.selectedCellType == Application.TYPE_WATER_SALT:
-                selected_tile["type"]["value__"].update(self.map.file, 3)
-                selected_tile["deepWater"].update(self.map.file, False)
-                selected_tile["saltWater"].update(self.map.file, True)
-            elif self.selectedCellType == Application.TYPE_FARM_BARREN:
-                selected_tile["type"]["value__"].update(self.map.file, 0)
-                selected_tile["fertile"].update(self.map.file, 0)
-            elif self.selectedCellType == Application.TYPE_FARM_FERTILE:
-                selected_tile["type"]["value__"].update(self.map.file, 0)
-                selected_tile["fertile"].update(self.map.file, 1)
-            elif self.selectedCellType == Application.TYPE_FARM_FERTILE_PLUS:
-                selected_tile["type"]["value__"].update(self.map.file, 0)
-                selected_tile["fertile"].update(self.map.file, 2)
-            elif self.selectedCellType == Application.TYPE_RES_ROCK:
-                selected_tile["type"]["value__"].update(self.map.file, 4)
-            elif self.selectedCellType == Application.TYPE_RES_STONE:
-                selected_tile["type"]["value__"].update(self.map.file, 2)
-            elif self.selectedCellType == Application.TYPE_RES_IRON:
-                selected_tile["type"]["value__"].update(self.map.file, 5)
-            elif self.selectedCellType == Application.TYPE_TREE_TREE:
-                selected_tile["amount"].update(self.map.file, 3)
-            elif self.selectedCellType == Application.TYPE_TREE_NOTREE:
-                selected_tile["amount"].update(self.map.file, 0)
-
-            self.map.draw(self.screen, 640)
+            self._brush.apply(self.map, tile_x, tile_y)
+            self.map_widget.render(self.screen)
 
 
 if __name__ == "__main__":

@@ -2,6 +2,7 @@
 import pygame
 
 import kac.colors as colors
+from kac.gui import Widget
 from kac.tile import TileType, Fertility
 
 
@@ -32,19 +33,6 @@ class KacMap(object):
 
     def tile_size(self, width: float) -> float:
         return width / self._width
-
-    def draw(self, screen, width: int, x: int=0, y: int=0) -> None:
-        tile_size = self.tile_size(width)
-        for i in range(self._height):
-            for j in range(self._width):
-                tile = self._tiles[self._height * i + j]
-                color = colors.get_tile_color(tile)
-                upper_left = x + (self._width - j - 1) * tile_size, y + i * tile_size
-
-                screen.fill(color, pygame.Rect(upper_left[0], upper_left[1], tile_size, tile_size))
-                if tile["amount"].value > 0 and tile["type"]["value__"].value == 0:
-                        tree_size = int(tile_size / 2.0)
-                        screen.fill(colors.Tree, pygame.Rect(upper_left[0] + tree_size, upper_left[1] + tree_size, tree_size, tree_size))
 
     def turn_all_farms(self):
         for tile in self._tiles:
@@ -80,3 +68,26 @@ class KacMap(object):
     @property
     def file(self):
         return self._data_file
+
+
+class MapWidget(Widget):
+    def __init__(self, x: int, y: int, width: int, height: int, map_object: KacMap) -> None:
+        Widget.__init__(self, x, y, width, height)
+        self._map = map_object
+
+    def render(self, screen):
+        tile_size = self.width / self._map.width
+        for i in range(self._map.height):
+            for j in range(self._map.width):
+                tile = self._map.tiles[self._map.height * i + j]
+                color = colors.get_tile_color(tile)
+                upper_left = self.x + (self._map.width - j - 1) * tile_size, self.y + i * tile_size
+
+                screen.fill(color, pygame.Rect(upper_left[0], upper_left[1], tile_size, tile_size))
+                if tile["amount"].value > 0 and tile["type"]["value__"].value == 0:
+                        tree_size = int(tile_size / 2.0)
+                        screen.fill(colors.Tree, pygame.Rect(upper_left[0] + tree_size, upper_left[1] + tree_size, tree_size, tree_size))
+
+    def click(self, x: int, y: int) -> None:
+        pass
+
