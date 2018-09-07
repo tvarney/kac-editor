@@ -160,11 +160,11 @@ def get_values(file, member_type_info_list, instance: ObjectInstance):
             elif additional_info == PrimitiveTypeEnumeration.DateTime:
                 instance.addValue(get_date_time(file))
             elif additional_info == PrimitiveTypeEnumeration.UInt16:
-                instance.addValue(getUInt16(file, 2))
+                instance.addValue(get_unsigned_int(file, 2))
             elif additional_info == PrimitiveTypeEnumeration.UInt32:
-                instance.addValue(getUInt32(file, 4))
+                instance.addValue(get_unsigned_int(file, 4))
             elif additional_info == PrimitiveTypeEnumeration.UInt64:
-                instance.addValue(getUInt64W(file, 8))
+                instance.addValue(get_unsigned_int(file, 8))
             elif additional_info == PrimitiveTypeEnumeration.Null:
                 instance.addValue(get_null(file))
             elif additional_info == PrimitiveTypeEnumeration.String:
