@@ -81,6 +81,7 @@ class MapWidget(Widget):
         self.grid = True
         self.grid_color = colors.Black
         self._map_area = self.rect
+        self._tile_size = (0, 0)
 
     def render(self, screen):
         if not self._dirty:
@@ -95,6 +96,7 @@ class MapWidget(Widget):
     def _render_nogrid(self, screen):
         self._map_area = self.rect
         tile_size = self.width / self.map.width
+        self._tile_size = tile_size, tile_size
         for i in range(self.map.height):
             for j in range(self.map.width):
                 tile = self.map.tiles[self.map.height * i + j]
@@ -134,6 +136,7 @@ class MapWidget(Widget):
         screen.fill(self.grid_color, bottom)
 
         self._map_area = Rect(left.right, top.bottom, right.left, bottom.top)
+        self._tile_size = tile_size
         x, y = self._map_area.left, self._map_area.top
 
         for i in range(map_height):
@@ -158,9 +161,12 @@ class MapWidget(Widget):
         x -= self._map_area.left
         y -= self._map_area.top
 
-        tile_factor = self.map.width / self._map_area.width
-        tile_x = int(math.ceil(x * tile_factor))
-        tile_y = int(math.ceil(y * tile_factor))
+        grid_add = 1 if self.grid else 0
+        tile_size = self._tile_size[0] + grid_add, self._tile_size[1] + grid_add
+
+        # tile_factor = self.map.width / self._map_area.width
+        tile_x = int(math.floor(x / tile_size[0]))
+        tile_y = int(math.floor(y / tile_size[1]))
         if 0 <= tile_x < self.map.width and 0 <= tile_y < self.map.height:
             self.brush.apply(self.map, tile_x, tile_y)
             self._dirty = True
