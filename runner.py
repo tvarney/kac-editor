@@ -1,12 +1,12 @@
 #!/usr/bin/python3
 
 import argparse
-import time
+import os
 import pygame
 import shutil
+import time
 
-from kac import colors
-from kac.brush import Brush, BrushTile
+from kac.brush import BrushTile
 from kac.extractor import parse_save_file, write_save_file
 from kac.map import KacMap, MapWidget
 from kac.gui import Container, Label, PushButton
@@ -25,6 +25,7 @@ class Application(object):
         self.parser.add_argument("--input", "-i", help="The path to a KaC save file")
         self.parser.add_argument("--gui", "-g", help="Launches the GUI", action="store_true")
         self.parser.add_argument("--dim", "-d", help="The height of the window")
+        self.parser.add_argument("--origin", "-o", help="The windows top-left corner")
         self.height = 640
         self._run_gui = True
         self.save_file = None
@@ -46,6 +47,20 @@ class Application(object):
                 self.height = max(new_height, 640)
             except ValueError:
                 print("  Invalid dim parameter: {}".format(args.dim))
+        if args.origin is not None:
+            parts = str(args.origin).split(",")
+            if len(parts) != 2:
+                print("  Invalid origin parameter: {}".format(args.origin))
+            else:
+                try:
+                    x = int(parts[0])
+                    y = int(parts[1])
+                    if x <= 0 or y <= 0:
+                        print("  Invalid origin parameter: {}".format(args.origin))
+                    else:
+                        os.environ["SDL_VIDEO_WINDOW_POS"] = str(args.origin)
+                except Exception:
+                    print("  Invalid origin parameter: {}".format(args.origin))
         if args.gui is None:
             print("  Running without GUI")
             self._run_gui = False
@@ -117,6 +132,7 @@ class Application(object):
         pygame.display.flip()
 
     def main_loop(self):
+        os.environ["SDL_VIDEO_WINDOW_POS"] = "50,50"
         self.parse_args()
         if not self.parse_save():
             print("Failed to parse save file; quitting...")
