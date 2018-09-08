@@ -27,10 +27,7 @@ class Brush(object):
         self._tile = BrushTile.Nothing
         self._size = 1
 
-    def apply_single(self, map_obj: 'KacMap', tile: 'dict'):
-        if self._tile == BrushTile.Nothing:
-            return
-
+    def _apply(self, map_obj: 'KacMap', tile: 'dict'):
         # TODO: Make sure to remove trees if they exist and they shouldn't on the new tile
         if self._tile == BrushTile.WaterDeep:
             tile["type"]["value__"].update(map_obj.file, 3)
@@ -66,8 +63,22 @@ class Brush(object):
             RuntimeError("Invalid BrushTile value: {}".format(self._tile))
 
     def apply(self, map_obj: 'KacMap', x: int, y: int):
-        tile = map_obj.tiles[y * map_obj.width + x]
-        self.apply_single(map_obj, tile)
+        if self._tile == BrushTile.Nothing:
+            return
+
+        start_x = x - self._size // 2
+        start_y = y - self._size // 2
+        for i in range(self._size):
+            t_y = start_y + i
+            if not (0 <= t_y < map_obj.height):
+                continue
+
+            for j in range(self._size):
+                t_x = start_x + j
+                if not (0 <= t_x < map_obj.width):
+                    continue
+                tile = map_obj.tiles[t_y * map_obj.width + t_x]
+                self._apply(map_obj, tile)
 
     @property
     def tile(self) -> BrushTile:

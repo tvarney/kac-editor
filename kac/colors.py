@@ -9,6 +9,7 @@ if typing.TYPE_CHECKING:
 White = (255, 255, 255)
 Black = (0, 0, 0)
 Magenta = (255, 0, 255)
+DarkRed = (64, 0, 0)
 
 Unknown = Magenta
 

@@ -1,6 +1,7 @@
 
 import pygame
 from pygame import Rect
+from kac import colors
 
 import typing
 if typing.TYPE_CHECKING:
@@ -131,14 +132,32 @@ class Label(Widget):
         width = max(self._text_size[0], kwargs.pop("width", 0))
         height = max(self._text_size[1], kwargs.pop("height", 0))
         self._anti_alias = bool(kwargs.pop("anti_alias", False))
-        self._color = kwargs.pop("color", (255, 255, 255))
+        self._color = kwargs.pop("color", colors.White)
+        self._back_color = kwargs.pop("back_color", colors.Black)
+        self._font = font
         self._text_surface = font.render(self._text, self._anti_alias, self._color)
         self._text_origin = x, y
         if self._centered:
             self._text_origin = x + center_dim(width, self._text_size[0]), y + center_dim(height, self._text_size[1])
         Widget.__init__(self, x, y, width, height)
 
+    @property
+    def text(self) -> str:
+        return self._text
+
+    @text.setter
+    def text(self, new_text: str) -> None:
+        self._text = new_text
+        self._text_size = self._font.size(self._text)
+        self._text_surface = self._font.render(self._text, self._anti_alias, self._color)
+        if self._centered:
+            t_x = self.x + center_dim(self.width, self._text_size[0])
+            t_y = self.y + center_dim(self.height, self._text_size[0])
+            self._text_origin = t_x, t_y
+        self.dirty = True
+
     def render(self, screen: 'pygame.Surface') -> None:
+        pygame.draw.rect(screen, self._back_color, self.rect, 0)
         screen.blit(self._text_surface, self._text_origin, None, 1)
         self._dirty = False
 
@@ -148,10 +167,10 @@ class PushButton(Widget):
         self._title = title
         self._font = font
         self._anti_alias = bool(kwargs.pop("anti_alias", False))
-        self._color = kwargs.pop("color", (255, 255, 255))
-        self._border_color = kwargs.pop("border_color", (255, 255, 255))
-        self._back_color_active = kwargs.pop("back_color_active", (64, 0, 0))
-        self._back_color_inactive = kwargs.pop("back_color_inactive", (0, 0, 0))
+        self._color = kwargs.pop("color", colors.White)
+        self._border_color = kwargs.pop("border_color", colors.White)
+        self._back_color_active = kwargs.pop("back_color_active", colors.DarkRed)
+        self._back_color_inactive = kwargs.pop("back_color_inactive", colors.Black)
         self._padding = max(kwargs.pop("padding", 2), 2)
         self._text_size = font.size(self._title)
         self._text_surface = font.render(self._title, self._anti_alias, self._color)

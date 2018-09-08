@@ -32,6 +32,7 @@ class Application(object):
         self.small_font = None
         self.font = None
         self._last_widget = None
+        self._brush_size_label = None
 
     def parse_args(self) -> None:
         print("Application::parse_args()")
@@ -43,36 +44,45 @@ class Application(object):
 
     def start_pygame(self) -> None:
         print("Application::start_pygame()")
-        self.screen = pygame.display.set_mode((844, 640))
+        self.screen = pygame.display.set_mode((860, 640))
         pygame.font.init()
-        self.gui = Container(640, 0, 204, 640)
+        self.gui = Container(640, 0, 220, 640)
         self.map_widget = MapWidget(0, 0, 640, 640, self.map)
-        self.font = pygame.font.SysFont("Arial", 20)
+        self.font = pygame.font.SysFont("Arial", 19)
         self.small_font = pygame.font.SysFont("Arial", 14)
         self.build_gui()
 
     def build_gui(self) -> None:
         gui = self.gui
         x, y, width, height = gui.bounds
-        gui.add(Label(x, 30, "Water", self.font, width=width, centered=True))
+        gui.add(Label(x+1, 30, "Water", self.font, width=width-2, centered=True))
         gui.add(PushButton(x + 2, y + 60, "Salt", self.font, width=66, height=66, action=self.action_water_salt))
         gui.add(PushButton(x + 70, y + 60, "Fresh", self.font, width=66, height=66, action=self.action_water_fresh))
         gui.add(PushButton(x + 138, y + 60, "Deep", self.font, width=66, height=66, action=self.action_water_deep))
 
-        gui.add(Label(x, 136, "Land", self.font, width=width, centered=True))
+        gui.add(Label(x+1, 136, "Land", self.font, width=width-2, centered=True))
         gui.add(PushButton(x + 2, y + 166, "Barren", self.font, width=66, height=66, action=self.action_land_barren))
         gui.add(PushButton(x + 70, y + 166, "Fertile", self.font, width=66, height=66, action=self.action_land_fertile))
         gui.add(PushButton(x + 138, y + 166, "Fertile+", self.font, width=66, height=66,
                            action=self.action_land_very_fertile))
 
-        gui.add(Label(x, 242, "Resources", self.font, width=width, centered=True))
+        gui.add(Label(x+1, 242, "Resources", self.font, width=width-2, centered=True))
         gui.add(PushButton(x + 2, y + 272, "Rock", self.font, width=66, height=66, action=self.action_res_rock))
         gui.add(PushButton(x + 70, y + 272, "Stone", self.font, width=66, height=66, action=self.action_res_stone))
         gui.add(PushButton(x + 138, y + 272, "Iron", self.font, width=66, height=66, action=self.action_res_iron))
 
-        gui.add(Label(x, 348, "Trees", self.font, width=width, centered=True))
-        gui.add(PushButton(x + 1, y + 378, "Trees", self.font, width=66, height=66, action=self.action_trees))
-        gui.add(PushButton(x + 70, y + 378, "No Trees", self.font, width=66, height=66, action=self.action_no_trees))
+        gui.add(Label(x+1, 348, "Trees", self.font, width=width-2, centered=True))
+        gui.add(PushButton(x + 2, y + 378, "Trees", self.font, width=66, height=66, action=self.action_trees))
+        gui.add(PushButton(x + 70, y + 378, "None", self.font, width=66, height=66, action=self.action_no_trees))
+
+        gui.add(Label(x + 2, 454, "Brush Size:", self.small_font))
+        self._brush_size_label = Label(x + 80, 454, str(self.map_widget.brush.size), self.small_font)
+        gui.add(self._brush_size_label)
+        gui.add(PushButton(x + 94, y + 452, "+", self.small_font, width=14, action=self.action_brush_inc))
+        gui.add(PushButton(x + 110, y + 452, '-', self.small_font, width=14, action=self.action_brush_dec))
+
+        gui.add(Label(x + 2, 600, "Press F to turn all land fertile+", self.small_font))
+        gui.add(Label(x + 2, 620, "Press C to clear the map", self.small_font))
 
     def parse_save(self) -> bool:
         print("Application::parse_save()")
@@ -95,8 +105,6 @@ class Application(object):
         self.map_widget.render(self.screen)
         self.gui.render(self.screen)
 
-        self.screen.blit(self.small_font.render('Press F to turn all farms fertile+', False, colors.White), (640, 490))
-        self.screen.blit(self.small_font.render('Press C to clear the map', False, colors.White), (640, 510))
         # self.map.draw(self.screen, 640)
         pygame.display.flip()
 
@@ -193,6 +201,18 @@ class Application(object):
 
     def action_no_trees(self, widget: 'Widget') -> None:
         self._handle_click(widget, BrushTile.ResourceNoTree)
+
+    def action_brush_inc(self, _: 'Widget') -> None:
+        if self.map_widget.brush.size > 9:
+            return
+        self.map_widget.brush.size += 1
+        self._brush_size_label.text = str(self.map_widget.brush.size)
+
+    def action_brush_dec(self, _: 'Widget') -> None:
+        if self.map_widget.brush.size <= 1:
+            return
+        self.map_widget.brush.size -= 1
+        self._brush_size_label.text = str(self.map_widget.brush.size)
 
 
 if __name__ == "__main__":
