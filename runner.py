@@ -24,6 +24,8 @@ class Application(object):
         self.parser = argparse.ArgumentParser(description="Kingdoms and Castles map editor")
         self.parser.add_argument("--input", "-i", help="The path to a KaC save file")
         self.parser.add_argument("--gui", "-g", help="Launches the GUI", action="store_true")
+        self.parser.add_argument("--dim", "-d", help="The height of the window")
+        self.height = 640
         self._run_gui = True
         self.save_file = None
         self.objects = None
@@ -38,16 +40,22 @@ class Application(object):
         print("Application::parse_args()")
         args = self.parser.parse_args()
         self.save_file = args.input
+        if args.dim is not None:
+            try:
+                new_height = int(args.dim)
+                self.height = max(new_height, 640)
+            except ValueError:
+                print("  Invalid dim parameter: {}".format(args.dim))
         if args.gui is None:
             print("  Running without GUI")
             self._run_gui = False
 
     def start_pygame(self) -> None:
         print("Application::start_pygame()")
-        self.screen = pygame.display.set_mode((860, 640))
+        self.screen = pygame.display.set_mode((self.height + 220, self.height))
         pygame.font.init()
-        self.gui = Container(640, 0, 220, 640)
-        self.map_widget = MapWidget(0, 0, 640, 640, self.map)
+        self.gui = Container(self.height, 0, 220, self.height)
+        self.map_widget = MapWidget(0, 0, self.height, self.height, self.map)
         self.font = pygame.font.SysFont("Arial", 19)
         self.small_font = pygame.font.SysFont("Arial", 14)
         self.build_gui()
