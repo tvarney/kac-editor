@@ -89,8 +89,8 @@ class Application(object):
         gui.add(PushButton(x + 94, y + 452, "+", self.small_font, width=14, action=self.action_brush_inc))
         gui.add(PushButton(x + 110, y + 452, '-', self.small_font, width=14, action=self.action_brush_dec))
 
-        gui.add(Label(x + 2, 600, "Press F to turn all land fertile+", self.small_font))
-        gui.add(Label(x + 2, 620, "Press C to clear the map", self.small_font))
+        gui.add(Label(x + 2, self.height - 40, "Press F to turn all land fertile+", self.small_font))
+        gui.add(Label(x + 2, self.height - 20, "Press C to clear the map", self.small_font))
 
     def parse_save(self) -> bool:
         print("Application::parse_save()")
