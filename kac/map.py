@@ -8,6 +8,10 @@ from kac.brush import Brush
 from kac.gui import Widget
 from kac.tile import TileType, Fertility
 
+import typing
+if typing.TYPE_CHECKING:
+    import Optional
+
 
 class KacMap(object):
     KeyCellSaveData = "Cell+CellSaveData"
@@ -27,12 +31,12 @@ class KacMap(object):
 
         if KacMap.KeyBuildings in self._map_objects:
             print("Buildings: ")
-            self._object_data = self._map_objects[KacMap.KeyBuildings].classBase.instances
+            self._object_data = self._map_objects[KacMap.KeyBuildings].class_base.instances
             for building in self._object_data:
-                pos = building["globalPosition"]["x"][0], building["globalPosition"]["y"][0]
-                idx = pos[0] + pos[1] * self._width
+                pos = building["globalPosition"]["x"][0], building["globalPosition"]["z"][0]
+                idx = int(pos[0] + pos[1] * self._width)
                 self._objects[idx] = building["uniqueName"].value
-                print("  ({}, {}) -> {}".format(pos[0], pos[1], self._objects[idx]))
+                print("  ({}, {}) -> {}".format(int(pos[0]), int(pos[1]), building.values.keys()))
 
     def tile_size(self, width: float) -> float:
         return width / self._width
@@ -47,6 +51,12 @@ class KacMap(object):
             tile["deepWater"].update(self._data_file, True)
             tile["saltWater"].update(self._data_file, False)
             tile["type"]["value__"].update(self._data_file, TileType.Water)
+
+    def get_tile(self, x: int, y: int) -> dict:
+        return self._tiles[y * self._width + x]
+
+    def get_object(self, x: int, y: int) -> 'Optional[str]':
+        return self._objects[x + y * self._width]
 
     @property
     def tiles(self) -> dict:
@@ -141,15 +151,19 @@ class MapWidget(Widget):
 
         for i in range(map_height):
             for j in range(map_width):
-                tile = self.map.tiles[map_height * i + j]
+                tile = self.map.get_tile(j, i)
+                # tile = self.map.tiles[map_height * i + j]
                 color = colors.get_tile_color(tile)
                 # upper_left = x + (map_width - j - 1) * tile_size[0] + j, y + i * tile_size[1] + i
                 upper_left = x + j * tile_size[0] + j, y + i * tile_size[1] + i
-
+                tile_rect = Rect(upper_left[0], upper_left[1], tile_size[0], tile_size[1])
                 screen.fill(color, Rect(upper_left[0], upper_left[1], tile_size[0], tile_size[1]))
+                building = self.map.get_object(j, i)
+                if building is not None:
+                    pygame.draw.rect(screen, colors.Magenta, tile_rect, 2)
                 if tile["amount"].value > 0 and tile["type"]["value__"].value == 0:
                     tree_size = int(tile_size[0] / 2.0)
-                    tile_rect = Rect(upper_left[0] + tree_size, upper_left[1] + tree_size, tree_size, tree_size)
+                    tile_rect = Rect(upper_left[0] + tree_size/2, upper_left[1] + tree_size/2, tree_size, tree_size)
                     screen.fill(colors.Tree, tile_rect)
 
     def click(self, x: int, y: int) -> None:
