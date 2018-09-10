@@ -9,15 +9,44 @@ from kac.serialization.value import Value
 
 import typing
 if typing.TYPE_CHECKING:
-    from typing import Any, List, Tuple, Union
+    from typing import Any, List, Optional, Tuple, Union
     from typing import BinaryIO
+    BooleanValue = Any
     ByteValue = Union[int, bytes, 'Byte']
     CharValue = Union[int, bytes, str, 'Char']
     DateTimeValue = Union[int, bytes, Tuple[int, 'DateTime.Kind'], 'DateTime']
     DecimalValue = Union[int, float, bytes, str, 'Decimal']
+    DoubleValue = Union[float, bytes, 'Double']
+    Int8Value = Union[int, bytes, 'Int8']
+    Int16Value = Union[int, bytes, 'Int16']
+    Int32Value = Union[int, bytes, 'Int32']
+    Int64Value = Union[int, bytes, 'Int64']
+    SingleValue = Union[float, bytes, 'Single']
+    StringValue = Union[str, bytes, 'String']
+    TimeSpanValue = Union[int, bytes, 'TimeSpan']
+    UInt16Value = Union[int, bytes, 'UInt16']
+    UInt32Value = Union[int, bytes, 'UInt32']
+    UInt64Value = Union[int, bytes, 'UInt64']
 
 
 class Primitive(Value):
+    @staticmethod
+    def class_from_enum(enum_value: 'PrimitiveType') -> 'Optional[Primitive]':
+        global _g_class_register
+        return _g_class_register[enum_value]
+
+    @classmethod
+    def read(cls, fp: 'BinaryIO') -> 'Primitive':
+        raise NotImplementedError("")
+
+    @abstractmethod
+    def set(self, new_value: 'Any') -> None:
+        raise NotImplementedError("{}::set() not implemented".format(type(self).__name__))
+
+    @abstractmethod
+    def get(self) -> 'Any':
+        raise NotImplementedError("{}::get() not implemented".format(type(self).__name__))
+
     @abstractmethod
     def type(self) -> PrimitiveType:
         raise NotImplementedError("{}::type() not implemented".format(type(self).__name__))
@@ -25,9 +54,7 @@ class Primitive(Value):
     def binary_type(self) -> BinaryType:
         return BinaryType.Primitive
 
-    def write(self, fp: 'BinaryIO', with_type: bool=True) -> None:
-        if with_type:
-            fp.write(bytes((self.type(), )))
+    def write(self, fp: 'BinaryIO') -> None:
         fp.write(bytes(self))
 
     @abstractmethod
@@ -36,8 +63,8 @@ class Primitive(Value):
 
 
 class Boolean(Primitive):
-    @staticmethod
-    def read(fp: 'BinaryIO') -> 'Boolean':
+    @classmethod
+    def read(cls, fp: 'BinaryIO') -> 'Boolean':
         return Boolean(fp.read(1))
 
     @staticmethod
@@ -74,8 +101,8 @@ class Boolean(Primitive):
 
 
 class Byte(Primitive):
-    @staticmethod
-    def read(fp: 'BinaryIO') -> 'Byte':
+    @classmethod
+    def read(cls, fp: 'BinaryIO') -> 'Byte':
         return Byte(fp.read(1))
 
     @staticmethod
@@ -120,8 +147,8 @@ class Byte(Primitive):
 
 
 class Char(Primitive):
-    @staticmethod
-    def read(fp: 'BinaryIO') -> 'Char':
+    @classmethod
+    def read(cls, fp: 'BinaryIO') -> 'Char':
         # A utf-8 character has the total number of bytes determined by
         # the first byte as:
         #   > 0xF0
@@ -188,8 +215,8 @@ class DateTime(Primitive):
         UtcTime = 1
         LocalTime = 2
 
-    @staticmethod
-    def read(fp: 'BinaryIO') -> 'DateTime':
+    @classmethod
+    def read(cls, fp: 'BinaryIO') -> 'DateTime':
         return DateTime(fp.read(8))
 
     @staticmethod
@@ -269,8 +296,8 @@ class DateTime(Primitive):
 class Decimal(Primitive):
     MaxValue = 79228162514264337593543950334
 
-    @staticmethod
-    def read(fp: 'BinaryIO') -> 'Decimal':
+    @classmethod
+    def read(cls, fp: 'BinaryIO') -> 'Decimal':
         length = utils.read_multi_byte_int(fp)
         data = fp.read(length)
         return Decimal(data.decode('utf-8'))
@@ -441,8 +468,8 @@ class Decimal(Primitive):
 
 
 class Double(Primitive):
-    @staticmethod
-    def read(fp: 'BinaryIO') -> 'Double':
+    @classmethod
+    def read(cls, fp: 'BinaryIO') -> 'Double':
         return Double(fp.read(8))
 
     @staticmethod
@@ -483,8 +510,8 @@ class Double(Primitive):
 
 
 class Int8(Primitive):
-    @staticmethod
-    def read(fp: 'BinaryIO') -> 'Int8':
+    @classmethod
+    def read(cls, fp: 'BinaryIO') -> 'Int8':
         return Int8(fp.read(1))
 
     @staticmethod
@@ -529,8 +556,8 @@ class Int8(Primitive):
 
 
 class Int16(Primitive):
-    @staticmethod
-    def read(fp: 'BinaryIO') -> 'Int16':
+    @classmethod
+    def read(cls, fp: 'BinaryIO') -> 'Int16':
         return Int16(fp.read(2))
 
     @staticmethod
@@ -575,8 +602,8 @@ class Int16(Primitive):
 
 
 class Int32(Primitive):
-    @staticmethod
-    def read(fp: 'BinaryIO') -> 'Int32':
+    @classmethod
+    def read(cls, fp: 'BinaryIO') -> 'Int32':
         return Int32(fp.read(4))
 
     @staticmethod
@@ -621,8 +648,8 @@ class Int32(Primitive):
 
 
 class Int64(Primitive):
-    @staticmethod
-    def read(fp: 'BinaryIO') -> 'Int64':
+    @classmethod
+    def read(cls, fp: 'BinaryIO') -> 'Int64':
         return Int64(fp.read(8))
 
     @staticmethod
@@ -666,29 +693,29 @@ class Int64(Primitive):
         return struct.pack('q', self._value)
 
 
-class LengthPrefixedString(Primitive):
-    @staticmethod
-    def read(fp: 'BinaryIO') -> 'LengthPrefixedString':
+class String(Primitive):
+    @classmethod
+    def read(cls, fp: 'BinaryIO') -> 'String':
         length = utils.read_multi_byte_int(fp)
-        return LengthPrefixedString(fp.read(length).decode('utf-8'))
+        return String(fp.read(length).decode('utf-8'))
 
     @staticmethod
-    def _convert(value: 'Union[str, bytes, LengthPrefixedString]') -> str:
+    def _convert(value: 'Union[str, bytes, String]') -> str:
         value_type = type(value)
         if value_type is str:
             return value
-        if value_type is LengthPrefixedString:
+        if value_type is String:
             return value.get()
         if value_type is bytes:
             read, length = utils.decode_multi_byte_int(value)
             if len(value) != read + length:
-                raise ValueError("LengthPrefixedString expected {} bytes, got {}".format(read + length, len(value)))
+                raise ValueError("String expected {} bytes, got {}".format(read + length, len(value)))
             return value[read:].decode('utf-8')
-        raise TypeError("LengthPrefixedString must be one of str, bytes, or LengthPrefixedString")
+        raise TypeError("String must be one of str, bytes, or LengthPrefixedString")
 
-    def __init__(self, value: 'Union[str, bytes, LengthPrefixedString]',
+    def __init__(self, value: 'Union[str, bytes, String]',
                  bin_type: BinaryType=BinaryType.Primitive) -> None:
-        self._value = LengthPrefixedString._convert(value)
+        self._value = String._convert(value)
         if bin_type < 0 or bin_type > 1:
             raise ValueError("LengthPrefixedString binary type must be one of Primitive or String")
         self._binary_type = bin_type
@@ -698,14 +725,14 @@ class LengthPrefixedString(Primitive):
         return self._value
 
     @value.setter
-    def value(self, value: 'Union[str, bytes, LengthPrefixedString]') -> None:
-        self._value = LengthPrefixedString._convert(value)
+    def value(self, value: 'Union[str, bytes, String]') -> None:
+        self._value = String._convert(value)
 
     def get(self) -> str:
         return self._value
 
-    def set(self, value: 'Union[str, bytes, LengthPrefixedString]') -> None:
-        self._value = LengthPrefixedString._convert(value)
+    def set(self, value: 'Union[str, bytes, String]') -> None:
+        self._value = String._convert(value)
 
     def type(self) -> PrimitiveType:
         return PrimitiveType.String
@@ -720,8 +747,8 @@ class LengthPrefixedString(Primitive):
 
 
 class Single(Primitive):
-    @staticmethod
-    def read(fp: 'BinaryIO') -> 'Single':
+    @classmethod
+    def read(cls, fp: 'BinaryIO') -> 'Single':
         return Single(fp.read(4))
 
     @staticmethod
@@ -753,8 +780,8 @@ class Single(Primitive):
 
 
 class TimeSpan(Primitive):
-    @staticmethod
-    def read(fp: 'BinaryIO') -> 'TimeSpan':
+    @classmethod
+    def read(cls, fp: 'BinaryIO') -> 'TimeSpan':
         return TimeSpan(fp.read(8))
 
     @staticmethod
@@ -791,8 +818,8 @@ class TimeSpan(Primitive):
 
 
 class UInt16(Primitive):
-    @staticmethod
-    def read(fp: 'BinaryIO') -> 'UInt16':
+    @classmethod
+    def read(cls, fp: 'BinaryIO') -> 'UInt16':
         return UInt16(fp.read(2))
 
     @staticmethod
@@ -837,8 +864,8 @@ class UInt16(Primitive):
 
 
 class UInt32(Primitive):
-    @staticmethod
-    def read(fp: 'BinaryIO') -> 'UInt32':
+    @classmethod
+    def read(cls, fp: 'BinaryIO') -> 'UInt32':
         return UInt32(fp.read(4))
 
     @staticmethod
@@ -883,8 +910,8 @@ class UInt32(Primitive):
 
 
 class UInt64(Primitive):
-    @staticmethod
-    def read(fp: 'BinaryIO') -> 'UInt64':
+    @classmethod
+    def read(cls, fp: 'BinaryIO') -> 'UInt64':
         return UInt64(fp.read(8))
 
     @staticmethod
@@ -926,3 +953,25 @@ class UInt64(Primitive):
 
     def __bytes__(self) -> bytes:
         return struct.pack('Q', self._value)
+
+
+_g_class_register = [
+    None,
+    Boolean,
+    Byte,
+    Char,
+    Decimal,
+    Double,
+    Int16,
+    Int32,
+    Int64,
+    Int8,
+    Single,
+    TimeSpan,
+    DateTime,
+    UInt16,
+    UInt32,
+    UInt64,
+    None,
+    String
+]

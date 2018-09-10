@@ -56,7 +56,7 @@ class PrimitiveType(IntEnum):
     UInt32 = 15
     UInt64 = 16
     Null = 17
-    String = 19
+    String = 18
 
 
 @unique
