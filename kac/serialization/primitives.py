@@ -19,16 +19,8 @@ if typing.TYPE_CHECKING:
 
 class Primitive(Value):
     @abstractmethod
-    def set(self, new_value: 'Any') -> None:
-        raise NotImplementedError()
-
-    @abstractmethod
-    def get(self) -> 'Any':
-        raise NotImplementedError()
-
-    @abstractmethod
     def type(self) -> PrimitiveType:
-        raise NotImplementedError()
+        raise NotImplementedError("{}::type() not implemented".format(type(self).__name__))
 
     def binary_type(self) -> BinaryType:
         return BinaryType.Primitive
@@ -40,7 +32,7 @@ class Primitive(Value):
 
     @abstractmethod
     def __bytes__(self) -> bytes:
-        raise NotImplementedError()
+        raise NotImplementedError("{}::__bytes__() not implemented".format(type(self).__name__))
 
 
 class Boolean(Primitive):
