@@ -398,6 +398,9 @@ def read_record_type_enum(file, top_level: bool=False):
     bin_type = get_int(file)
     typeStats[bin_type] += 1
 
+    if bin_type == RecordType.SerializedStreamHeader:
+        return False
+
     if bin_type == RecordType.ClassWithId:
         return get_class_with_id(file)
     elif bin_type == RecordType.SystemClassWithMembersAndTypes:
